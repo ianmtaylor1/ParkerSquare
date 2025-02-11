@@ -71,3 +71,5 @@ However, we can still do better via a more efficient check for QSS-ness before e
 ## Emperical performance and runtime
 
 The first one million values of $r_{22}$, and therefore all values of $k$ up to $2 \times 10^{12}$, where checked on my personal laptop, single-threaded, in approximately 7.5 hours. The overall time complexity for checking all values of $r_{22}$ up to $N$ appears to be quadratic. If you're a glass half-full kind of person, you could say the overall time complexity of checking all values of $x_{22}$ up to $N$ is linear.
+
+![Plot showing a quadratic relationship between $r_{22}$ and cumulative runtime.](parkersquare_time.png)
