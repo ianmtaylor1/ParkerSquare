@@ -17,6 +17,8 @@ where all integers are unique and the three rows, three columns, and two main di
 
 ## The search
 
+### The main idea ($k$)
+
 The search employed here revolves around the central value, $x_{22}$, and its square root, $r_{22}$. Consider all sums passing through $x_{22}$: the second row, second column, and both diagonals. Subtracting $x_{22}$ from each reveals a common constant we call $k$,
 
 $$
@@ -27,10 +29,31 @@ We note several interesting and useful properties of $k$.
 
 First, directly from the above equation, $k$ must be expressable as the sum of two squares in at least four unique ways.
 
-Second, consider the relationship between $k$ and the common sum of the square, $T$. The first and third rows of the magic square, together, comprise exactly three copies of $k$ and exactly two copies of $T$. Therefore $T = 3k/2$. Now considering one sum containing $x_{22}$, we see
+Second, $k = 2r_{22}^2$. Consider the relationship between $k$ and the common sum of the square, $T$. The first and third rows of the magic square, together, comprise exactly three copies of $k$ and exactly two copies of $T$. Therefore $T = 3k/2$. Now considering one sum containing $x_{22}$, we see
 
 $$
 T = x_{11} + x_{22} + x_{33} = x_{22} + k.
 $$
 
 Therefore $x_{22} = k/2$ and $k$ must also be twice a perfect square, specifically, $k = 2r_{22}^2$.
+
+Third, with $r_{22}$, $k$, and all pairs of square numbers which sum to $k$, it is relatively easy to try all permutations and check for the desired magic square. All eight values on the permiter of the magic square are involved in a sum with its opposite to equal $k$.
+
+### Details of the search algorithm
+
+The algorithm has the following general steps:
+
+For $r_{22} = 1,2,\dots$
+1. Set $k = 2r_{22}^2$.
+2. Determine if $k$ can be written as a sum of squares in at least 4 unique ways.
+    - If not, continue to next $r_22$.
+3. Find all $(a_i, b_i)$ with $0 < a_i < b_i$, with $a_i,b_i$ square, and $a_i + b_i = k$.
+4. Try combinations of $(a_i, b_i)$ for the diagonal and second column sums to complete the top and bottom rows with common sum $T$.
+    - If unsuccessful, continue to next $r_{22}$.
+5. With a completed top and bottom row, and known $T$, fill in the middle row so each column sums to $T$ and check if the filled in values are perfect squares.
+    - If unsuccessful, continue to next $r_{22}$.
+    - If successful, you've won \$10,000.
+  
+#### Steps 2 and 3 - finding Quad Sums of Squares (QSS)
+
+#### Steps 4 and 5 - filling in the magic square
