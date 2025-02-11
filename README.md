@@ -66,7 +66,7 @@ However, we can still do better via a more efficient check for QSS-ness before e
 
 #### Steps 4 and 5 - filling in the magic square
 
-
+TBD. Algorithm is in the functions `partialsquares` (step 4) and `finishsquare` (step 5).
 
 ## Emperical performance and runtime
 
