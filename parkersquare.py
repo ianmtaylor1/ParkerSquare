@@ -7,29 +7,35 @@ import timeit
 
 ###############################################################################
 
-checkmod = 5184
-squareresids = {(i ** 2) % checkmod for i in range(checkmod)}
-
 def is_square(n):
     """Returns true or false if n is a square integer."""
-    return (n % checkmod in squareresids) and (math.isqrt(n) ** 2 == n)
+    return (math.isqrt(n) ** 2 == n)
 
 ###############################################################################
 
-def factorize(n):
-    """Return the prime factorization of n in the form of a dictionary
-    {p:e} where p is each prime factor and e is the exponent it is raised
-    to in the prime factorization."""
-    i = 2
+def check_factorize(n):
+    """Check if the prime factorization of a number n contains only odd primes
+    congruent to 1 mod 4. If yes, return the prime factorization of n in the
+    form of a dictionary {p:e} where p is each prime factor and e is the
+    exponent it is raised to in the prime factorization. If no, return None"""
+    if n % 2 == 0:
+        return None
+    i = 3
     factors = {}
     while i*i <= n:
         if n % i == 0:
-            factors[i] = factors.get(i, 0) + 1
-            n //= i
+            if i % 4 == 1:
+                factors[i] = factors.get(i, 0) + 1
+                n //= i
+            else:
+                return None
         else:
-            i += 1
+            i += 2
     if n > 1:
-        factors[n] = factors.get(n, 0) + 1
+        if n % 4 == 1:
+            factors[n] = factors.get(n, 0) + 1
+        else:
+            return None
     return factors
 
 def countsumsquares(factors):
@@ -67,11 +73,16 @@ def getsumsquares(n, stopafter = None):
         if asquared + bsquared == n:
             pairs.append((asquared,bsquared))
             nfound += 1
-        if asquared + bsquared >= n:
+            a += 1
+            asquared += a + a - 1
             b -= 1
             bsquared -= b + b + 1
-        a += 1
-        asquared += a + a - 1
+        elif asquared + bsquared > n:
+            b -= 1
+            bsquared -= b + b + 1
+        elif asquared + bsquared < n:
+            a += 1
+            asquared += a + a - 1
     return pairs
 
 def getborderpairs(m):
@@ -79,14 +90,24 @@ def getborderpairs(m):
     of the Parker square, find the possible pairs of squares to surround
     the center value. These are the unique ways two squares can add to
     2*m^2, if four such unique ways exist. If they exist, return a list
-    of tuples of all these pairs. If they don't exist, return None."""
+    of tuples of all these pairs. If they don't exist, return None. If
+    the only pairs of such squares would all have a common factor with
+    m^2, then skip."""
     # Quick(er) check based on prime factorization of m
-    factors = factorize(m)
+    if (m % 4 != 1):
+        return None
+    factors = check_factorize(m)
+    if factors is None:
+        return None
+    for p in factors.keys():
+        if (p == 2) or (p % 4 == 3):
+            return None
     factors = {p:2*e for p,e in factors.items()}
     factors[2] = factors.get(2, 0) + 1
     numways = (countsumsquares(factors) - 4) // 8 # remove irrelevant pairs
     if numways < 4:
         return None
+    # If there theoretically are 4 pairs, find them
     pairs = getsumsquares(2 * m * m, stopafter = numways)
     if len(pairs) != numways:
         raise Exception(f"Expected {numways} pairs, got {len(pairs)}")
@@ -100,30 +121,30 @@ def partialsquares(pairs):
     and a + b = n for a common n.
     Iterate through all squares in the form of 3x3 lists representing
     the magic square in row-major order.
-    'pairs' is a list of at least 4 tuples of integers."""
-    # First pick two pairs to be the corners of the main (TL-BR) diagonal
-    # and the secondary (TR-BL) diagonal, respectively. Due to symmetry,
-    # we don't need to order these entries. We just place the smaller of
-    # each pair on the top row.
-    for corners1,corners2 in itertools.combinations(pairs, 2):
-        # For every other pair, see if it can fit into the central vertical
-        # column, i.e., if it can be placed there such that the top and
+    'pairs' is a list of at least 4 tuples of integers that have a common sum.
+    """
+    # Pick three pairs to make up the top and bottom row of the magic square.
+    # We can show that the small number in the column pair must be smaller
+    # than the small number of both corner pairs. Further, due to reflectional
+    # symmetry, we can arbitrarily decide that the top left corner of the
+    # square is smaller than the top right corner of the pair, and that the
+    # smaller of each corner pair is in the top row
+    for column,corners1,corners2 in itertools.combinations(sorted(pairs), 3):
+        # See if the three pairs can fit into the diagonals and center column,
+        # i.e., if they can be placed there such that the top and
         # bottom row sum to the same value. Because we've oriented the corners
         # such that the smaller number is on top, we know that if a pair works
         # it must have its larger value on the top row
-        for column in pairs:
-            if (column == corners1) or (column == corners2):
-                continue
-            toprowsum    = corners1[0] + column[1] + corners2[0]
-            bottomrowsum = corners2[1] + column[0] + corners1[1]
-            if toprowsum == bottomrowsum:
-                square = [[corners1[0], column[1], corners2[0]],
-                          [0, 0, 0],
-                          [corners2[1], column[0], corners1[1]]]
-                yield square
+        toprowsum    = corners1[0] + column[1] + corners2[0]
+        bottomrowsum = corners2[1] + column[0] + corners1[1]
+        if toprowsum == bottomrowsum:
+            square = [[corners1[0], column[1], corners2[0]],
+                      [0, 0, 0],
+                      [corners2[1], column[0], corners1[1]]]
+            yield square
 
 def finishsquare(square):
-    """Given a desired total and a partially completed magic square,
+    """Given a partially completed magic square,
     fill in the rest if possible. If possible, return the completed square.
     If not possible, return None.
     'square' is a 3x3 array in row-major order. The top and bottom rows are
@@ -139,23 +160,31 @@ def finishsquare(square):
             works = False
     return works, square
 
+###############################################################################
+
 def square_sqrt(square):
     return [[math.isqrt(n) for n in row] for row in square]
 
+def count_forever(start):
+    while True:
+        yield start
+        start += 1
 
-###############################################################################
-
-def search(start, end, report=None):
+def search(start, end=None, report=None):
     """Search for Parker Squares whose center number is m^2, for m from
     'start' to 'end', inclusive. Report progress every 'report' values
     of m. Will return immediately if a Parker square is found, otherwise,
     will return None after 'end' is reached."""
     if report is None:
-        report = 10 ** (math.floor(math.log10(end - start + 1)) - 1)
+        if end is not None:
+            report = 10 ** (math.floor(math.log10(end - start + 1)) - 1)
+        else:
+            report = 10 ** 4
     
     starttimer = timeit.default_timer()
     qssfound = 0
-    for middle in range(start, end + 1):
+    searchspace = count_forever(start) if end is None else range(start, end + 1)
+    for middle in searchspace:
         pairs = getborderpairs(middle)
         if pairs is not None:
             qssfound += 1
@@ -166,7 +195,7 @@ def search(start, end, report=None):
                     return square
                 else:
                     print(f"Candidate square:\n {square}\n {square_sqrt(square)}", flush=True)
-        if (middle - start + 1) % report == 0:
+        if middle % report == 0:
             currenttime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             currenttimer = timeit.default_timer()
             elapsed = round((currenttimer - starttimer) / 60, 1)
@@ -177,6 +206,6 @@ def search(start, end, report=None):
 ###############################################################################
 
 if __name__ == '__main__':
-    search(10**6 + 1, 10**6 + 1000)
+    search(1, report = 10**5)
 
 
