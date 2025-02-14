@@ -1,0 +1,1 @@
+This folder contains code files that were used to explore or learn while writing this code. Not all of them are still relevant to the main code, but they all have useful things to teach an interested reader. They also provide insight into the process of writing this code.
