@@ -66,7 +66,25 @@ However, we can still do better via a more efficient check for QSS-ness before e
 
 #### Steps 4 and 5 - filling in the magic square
 
-TBD. Algorithm is in the functions `partialsquares` (step 4) and `finishsquare` (step 5).
+We start these steps with a value for $k$, and at least four pairs of squares $(a_i, b_i)$ with $a_i < b_i$ and $a_i + b_i = k$. Let $(a_1,b_1)$ be the pair on the top left to bottom right diagonal, and $(a_2,b_2)$ be the pair on the top right to bottom left diagonal. By reflectional and rotational symmetry of the magic square, we can always orient the square such that the smaller of each pair is in the top row and the top left corner is smaller than the top right corner. So without loss of generality, let $a_1 < a_2 < b_2 < b_1$. The magic square now looks like this:
+```math
+\begin{matrix}
+a_1 & \cdot & a_2 \\
+\cdot & \cdot & \cdoot \\
+b_2 & \cdot & b_1
+\end{matrix}
+```
+Now we let $(a_3, b_3)$ be be the pair in the center column. Because we know that the top and bottom rows must have the same sum, then $b_3$ is in the top row and $a_3$ is in the bottom row, otherwise the top row would obviously have a smaller sum than the bottom row. Placing this pair completes the top and bottom rows:
+```math
+\begin{matrix}
+a_1 & b_3 & a_2 \\
+\cdot & \cdot & \cdoot \\
+b_2 & a_3 & b_1
+\end{matrix}
+```
+The top row sum can now be written as $a_1 + b_3 + a_2 = a_1 + (k - a_3) + a_2 = 3k/2$. Then, $a_1 - a_3 = k/2 - a_2 > 0$, so $a_3 < a_1$. We now have a complete ordering of $a_3 < a_1 < a_2$.
+
+With this ordering, we can iterate over every combination of three pairs $(a_i, b_i)$, placing them in the top and bottom rows and checking for equal sums. If the sums are equal, we can complete the middle row by using the known common sum and checking for the squareness of each number in the middle row. If all numbers in the middle row are square, the magic square is complete.
 
 ## Emperical performance and runtime
 
