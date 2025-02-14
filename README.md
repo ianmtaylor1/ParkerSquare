@@ -70,7 +70,7 @@ We start these steps with a value for $k$, and at least four pairs of squares $(
 ```math
 \begin{matrix}
 a_1 & \cdot & a_2 \\
-\cdot & \cdot & \cdoot \\
+\cdot & \cdot & \cdot \\
 b_2 & \cdot & b_1
 \end{matrix}
 ```
@@ -78,7 +78,7 @@ Now we let $(a_3, b_3)$ be be the pair in the center column. Because we know tha
 ```math
 \begin{matrix}
 a_1 & b_3 & a_2 \\
-\cdot & \cdot & \cdoot \\
+\cdot & \cdot & \cdot \\
 b_2 & a_3 & b_1
 \end{matrix}
 ```
