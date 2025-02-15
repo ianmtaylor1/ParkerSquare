@@ -86,8 +86,18 @@ The top row sum can now be written as $a_1 + b_3 + a_2 = a_1 + (k - a_3) + a_2 =
 
 With this ordering, we can iterate over every combination of three pairs $(a_i, b_i)$, placing them in the top and bottom rows and checking for equal sums. If the sums are equal, we can complete the middle row by using the known common sum and checking for the squareness of each number in the middle row. If all numbers in the middle row are square, the magic square is complete.
 
+## Limiting the search
+
+We can significantly limit the search space of $r_{22}$ by considering magic squares that are reducible, i.e., all elements in the square contain a common factor which can be divided out to produce a smaller magic square of squares. Because we're only interested in finding one Parker square, we only need to search for magic squares where there is no such common factor.
+
+To see an example, consider the case when $2|r_{22}$. This implies $4|x_{22}$ and $4|k$, so $k \equiv 0 \pmod{4}$. The only [quadratic residues](https://en.wikipedia.org/wiki/Quadratic_residue) mod 4 are 0 and 1. So every pair of squares (e.g. $x_{11}$ and $x_{33}$) surrounding the center must both also be divisible by 4, otherwise, they could not sum to a number divisible by 4. So we have $2|r_{22} \implies 4|x_{22} \implies k \equiv 0 \pmod{4} \implies x_{11},\dots,x_{33} \equiv 0 \pmod{4}$, and all numbers in the magic square are divisible by 4. Therefore we can ignore in our search all even values of $r_{22}$, not because there can't be Parker squares with those values, but because if there were, there would also be a smaller Parker square obtained by dividing all values in the square by 4 which we would have found already.
+
+It turns out, we can also ignore $r_{22}$ which are divisible by any primes $p \equiv 3 \pmod{4}$ for the same reason. $p | r_{22} \implies p^2 | x_{22} \implies \dots \implies p^2 | x_{11},\dots,x_{33}$. This is because the only way for two squares to add to a value which is divisible by $p^2$, if $p \equiv 3 \pmod{4}$, is for them to both also be divisible by $p^2$, due to the quadratic residues $\mathrm{mod} p^2$.
+
+This means that we only need to consider $r_{22}$ with only primes which are equivalent to 1 mod 4 in their prime factorizations. We can easily check for this while we perform the prime factorization in step 2, exiting quickly as soon as a bad prime factor is found. This also means that $r_{22} \equiv 1 \pmod{4}$, which we can very quickly check before doing anything else.
+
 ## Emperical performance and runtime
 
-The first one million values of $r_{22}$, and therefore all values of $k$ up to $2 \times 10^{12}$, where checked on my personal laptop, single-threaded, in approximately 7.5 hours. The overall time complexity for checking all values of $r_{22}$ up to $N$ appears to be quadratic. If you're a glass half-full kind of person, you could say the overall time complexity of checking all values of $x_{22}$ up to $N$ is linear.
+The first one million values of $r_{22}$, and therefore all values of $k$ up to $2 \times 10^{12}$, were checked on my personal laptop, single-threaded, in approximately 7.5 hours. The overall time complexity for checking all values of $r_{22}$ up to $N$ appears to be quadratic. If you're a glass half-full kind of person, you could say the overall time complexity of checking all values of $x_{22}$ up to $N$ is linear.
 
 ![Plot showing a quadratic relationship between $r_{22}$ and cumulative runtime.](parkersquare_time.png)
