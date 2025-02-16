@@ -10,6 +10,28 @@ from operator import mul
 class FactorException(Exception):
     pass
 
+def _countup():
+    """Generator of 2 and all odd integers"""
+    yield 2
+    n = 3
+    while True:
+        yield n
+        n += 2
+
+def isprime(n):
+    """Return True if n is prime, False otherwise."""
+    for p in _countup():
+        if n % p == 0:
+            return False
+        elif p * p > n:
+            return True
+
+def primes():
+    """Generator of all primes."""
+    for n in _countup():
+        if isprime(n):
+            yield n
+
 
 def factorize1mod4(n):
     """Check if the prime factorization of a number n contains only odd primes
