@@ -33,13 +33,7 @@ We note several interesting and useful properties of $k$.
 
 First, directly from the above equation, $k$ must be expressable as the sum of two squares in at least four unique ways. We call this a Quadruple Sum of Squares (QSS).
 
-Second, $k = 2r_{22}^2$. Consider the relationship between $k$ and the common sum of the square, $T$. The first and third rows of the magic square, together, comprise exactly three copies of $k$ and exactly two copies of $T$. Therefore $T = 3k/2$. Now considering one sum containing $x_{22}$, we see
-
-$$
-T = x_{11} + x_{22} + x_{33} = x_{22} + k.
-$$
-
-Therefore $x_{22} = k/2$ and $k$ must also be twice a perfect square, specifically, $k = 2r_{22}^2$.
+Second, $k = 2r_{22}^2$. To see this, consider the relationship between $k$ and the common sum of the square, $T$. The first and third rows of the magic square, together, comprise exactly three copies of $k$ and exactly two copies of $T$. Therefore $T = 3k/2$. Now considering one sum containing $x_{22}$, we see $T = x_{11} + x_{22} + x_{33} = x_{22} + k$. Therefore $x_{22} = k/2$ and $k$ must also be twice a perfect square, specifically, $k = 2r_{22}^2$.
 
 Third, with $r_{22}$, $k$, and all pairs of square numbers which sum to $k$, it is relatively easy to try all permutations and check for the desired magic square. All eight values on the permiter of the magic square are involved in a sum with its opposite to equal $k$.
 
@@ -56,13 +50,19 @@ For $r_{22} = 1,2,\dots$
     - If unsuccessful, continue to next $r_{22}$.
 5. With a completed top and bottom row, and known $T$, fill in the middle row so each column sums to $T$ and check if the filled in values are perfect squares.
     - If unsuccessful, continue to next $r_{22}$.
-    - If successful, you've won \$10,000.
+    - If successful, save Parker square and exit.
   
 #### Steps 2 and 3 - finding Quadruple Sums of Squares (QSS)
 
-The naive way of performing these steps would be to simply skip straight to step 3: find all pairs of squares that add to $k$ and check if there are at least 4 such pairs. This isn't a terrible approach as this search can be completed in ${\cal O}(\sqrt{k})$ time, and needs to be done if $k$ is a QSS anyway. Starting with $i = 1$ and continuing until $i^2 >= k/2$, determine if $k - i^2$ is a perfect square. In total, approximately $\sqrt{k/2}$ checks for squareness must be performed. As implemented, we can be slightly more efficient by maintaining four variables, initialized as `a = 1`, `asquared = 1`, `b = isqrt(k - asquared)`, `bsquared = b * b`, and "walking" them towards each other and noting any instances when `k = asquared + bsquared`.
+The most straightforward way to complete these steps is to do them both at once: find all pairs of squares that add to $k$ and check if there are at least 4 such pairs. The simplest way to find all pairs of squares is a direct search. Starting with $i = 1$ and continuing until $i^2 >= k/2$, determine if $k - i^2$ is a perfect square. In total, approximately $\sqrt{k/2}$ checks for squareness must be performed, so this search can be completed in ${\cal O}(\sqrt{k})$ time. We can be slightly more efficient by maintaining four variables, initialized as `a = 1`, `asquared = 1`, `b = isqrt(k - asquared)`, `bsquared = b * b`, and "walking" them towards each other and noting any instances when `k = asquared + bsquared`.
 
-However, we can still do better via a more efficient check for QSS-ness before enumerating all pairs. We do this check based on [Jacobi's two-square theorem](https://en.wikipedia.org/wiki/Sum_of_two_squares_theorem#Jacobi's_two-square_theorem). This theorem states that the number of ways in which a number can be written as the sum of two squares can be determined from its prime factorization. At first, this might not seem beneficial. A naive algorithm for prime factorization of a number $n$ takes ${\cal O}(\sqrt{n})$ time, the same time complexity as finding all pairs of squares directly. But we can take advantage of the fact that $k$ has the form $k = 2r_{22}^2$ by finding the prime factorization of $r_{22}$ and then easily producing the prime factorization of $2r_{22}^2$. This then only has time complexity ${\cal O}(\sqrt{r_{22}}) = {\cal O}(k^{1/4})$. In practice, we find that about 25%-30% of all $k$ are QSS, reducing the time required by 70%-75% over the long run.
+However, we can do better by using the prime factorization of $k$. We first check for the number of ways $k$ can be written as the sum of two squares using [Jacobi's two-square theorem](https://en.wikipedia.org/wiki/Sum_of_two_squares_theorem#Jacobi's_two-square_theorem). Then, we recursively generate each pair of squares that sum to $k$ also using its prime factorization. Starting with the 8 ways (including different orderings and negative values) to write each prime as the sum of two squares, use the [Brahmagupta-Fibonacci identity](https://en.wikipedia.org/wiki/Brahmagupta%E2%80%93Fibonacci_identity) (also called the Diophantus identity) to generate pairs of squares for the product in the following way:
+
+Let $x = a_i^2 + b_i^2$ for $i=1\dots,m$ and let $y = c_j^2 + e_j^2$ for $j=1,\dots,n$. Then $xy = (a_i c_j + b_i d_j)^2 + (a_i d_j - b_i c_j)^2$ for all pairs $(i,j) \in \\{1,\dots,m\\}\times\\{1,\dots,n\\}$.
+
+Note that this algorithm can produce duplicates. Diophantus's identity is mostly used as proof of the existence of squares that add to $xy$. I haven't seen a proof that this method will generate all possible pairs of squares that sum to $xy$. However, my code will raise an exception if the number of unique pairs at the end of this process is different from what is given by Jacobi's two-square theorem and fall back to the direct way. So far, I've never seen this fallback option actually need to be used.
+
+At first, this prime factorization approach might not seem beneficial. A simple algorithm for prime factorization of a number $n$ takes ${\cal O}(\sqrt{n})$ time, the same time complexity as finding all pairs of squares directly. But we can take advantage of the fact that $k$ has the form $k = 2r_{22}^2$ by finding the prime factorization of $r_{22}$ and then easily producing the prime factorization of $2r_{22}^2$. Then this method only has time complexity ${\cal O}(\sqrt{r_{22}}) = {\cal O}(k^{1/4})$.
 
 #### Steps 4 and 5 - filling in the magic square
 
@@ -86,7 +86,9 @@ The top row sum can now be written as $a_1 + b_3 + a_2 = a_1 + (k - a_3) + a_2 =
 
 With this ordering, we can iterate over every combination of three pairs $(a_i, b_i)$, placing them in the top and bottom rows and checking for equal sums. If the sums are equal, we can complete the middle row by using the known common sum and checking for the squareness of each number in the middle row. If all numbers in the middle row are square, the magic square is complete.
 
-## Limiting the search
+## Search optimizations
+
+### Limiting the search
 
 We can significantly limit the search space of $r_{22}$ by considering magic squares that are reducible, i.e., all elements in the square contain a common factor which can be divided out to produce a smaller magic square of squares. Because we're only interested in finding one Parker square, we only need to search for magic squares where there is no such common factor.
 
@@ -96,8 +98,3 @@ It turns out, we can also ignore $r_{22}$ which are divisible by any primes $p \
 
 This means that we only need to consider $r_{22}$ with only primes which are equivalent to 1 mod 4 in their prime factorizations. We can easily check for this while we perform the prime factorization in step 2, exiting quickly as soon as a bad prime factor is found. This also means that $r_{22} \equiv 1 \pmod{4}$, which we can very quickly check before doing anything else.
 
-## Emperical performance and runtime
-
-The first one million values of $r_{22}$, and therefore all values of $k$ up to $2 \times 10^{12}$, were checked on my personal laptop, single-threaded, in approximately 7.5 hours. The overall time complexity for checking all values of $r_{22}$ up to $N$ appears to be quadratic. If you're a glass half-full kind of person, you could say the overall time complexity of checking all values of $x_{22}$ up to $N$ is linear.
-
-![Plot showing a quadratic relationship between $r_{22}$ and cumulative runtime.](parkersquare_time.png)
