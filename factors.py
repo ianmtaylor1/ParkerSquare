@@ -52,7 +52,7 @@ def factorize1mod4(n):
             else:
                 return None
         else:
-            i = next(countup)
+            i = next(tocheck)
     if n > 1:
         if n % 4 == 1:
             factors[n] = factors.get(n, 0) + 1
