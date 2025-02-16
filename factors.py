@@ -10,6 +10,7 @@ from operator import mul
 class FactorException(Exception):
     pass
 
+
 def _countup():
     """Generator of 2 and all odd integers"""
     yield 2
@@ -18,6 +19,7 @@ def _countup():
         yield n
         n += 2
 
+
 def isprime(n):
     """Return True if n is prime, False otherwise."""
     for p in _countup():
@@ -25,6 +27,7 @@ def isprime(n):
             return False
         elif p * p > n:
             return True
+
 
 def primes():
     """Generator of all primes."""
@@ -38,10 +41,9 @@ def factorize1mod4(n):
     congruent to 1 mod 4. If yes, return the prime factorization of n in the
     form of a dictionary {p:e} where p is each prime factor and e is the
     exponent it is raised to in the prime factorization. If no, return None"""
-    if n % 2 == 0:
-        return None
-    i = 3
     factors = {}
+    tocheck = _countup()
+    i = next(tocheck)
     while i*i <= n:
         if n % i == 0:
             if i % 4 == 1:
@@ -50,7 +52,7 @@ def factorize1mod4(n):
             else:
                 return None
         else:
-            i += 2
+            i = next(countup)
     if n > 1:
         if n % 4 == 1:
             factors[n] = factors.get(n, 0) + 1
@@ -64,16 +66,14 @@ def factorize(n):
     entries {p:e}, where p is a prime factor and e is the exponent it is
     raised to in the prime factorization."""
     factors = {}
-    while n % 2 == 0:
-        factors[2] = factors.get(2,0) + 1
-        n //= 2
-    i = 3
+    tocheck = _countup()
+    i = next(tocheck)
     while i*i <= n:
         if n % i == 0:
             factors[i] = factors.get(i, 0) + 1
             n //= i
         else:
-            i += 2
+            i = next(tocheck)
     if n > 1:
         factors[n] = factors.get(n, 0) + 1
     return factors
@@ -139,6 +139,8 @@ def _primepowersumsquares(p, e):
     whether p is prime."""
     if (p % 4 == 3):
         return set()
+    elif (e == 0):
+        return {(1,0),(0,1),(-1,0),(0,-1)}
     a,b = _primesumsquares(p)
     basepairs = {(a,b),(-a,b),(a,-b),(-a,-b),(b,a),(-b,a),(b,-a),(-b,-a)}
     pairs = basepairs
@@ -180,3 +182,10 @@ def getnum(factors):
         return reduce(mul, (p**e for p,e in factors.items()))
 
 
+def tostring(factors):
+    """Prints the prime factorization in a nice readable format."""
+    components = [f"{p}^{e}" for p,e in sorted(factors.items()) if e > 0]
+    if len(components) > 0:
+        return " * ".join(components)
+    else:
+        return "1"
