@@ -152,8 +152,6 @@ def getsumsquares(factors):
     """Given the prime factorization of a positive integer, return all pairs of
     integers (a,b) such that a^2 + b^2 = n. a and b can be zero or negative,
     and (a,b) is distinct from (b,a)."""
-    # Find out how many pairs we are expecting
-    ways = countsumsquares(factors)
     # Building up from 1 using each prime power in the factorization, apply
     # Diophantus's identity to each combination of sums of squares building
     # up to n.
@@ -165,7 +163,11 @@ def getsumsquares(factors):
         elif (p % 4 == 3) and (e % 2 == 1):
             pairs = set()
             break
-    if len(pairs) != ways:
+        elif (p % 4 == 3) and (e % 2 == 0):
+            scale = p ** (e // 2)
+            pairs = {(a * scale, b * scale) for a,b in pairs}
+    # Compare the number produced to the expected number (Jacobi)
+    if len(pairs) != countsumsquares(factors):
         raise FactorException("Failed to produce all pairs.")
     return pairs
 
