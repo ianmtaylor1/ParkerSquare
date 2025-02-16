@@ -3,7 +3,7 @@ Searching for magic-squares-of-squares
 
 ## Results so far
 
-If a magic square of squares exists, its middle value is at least $10^{12}$ and the common sum of its rows, columns, and diagonals is at least $3 \times 10^{12}$.
+If a magic square of squares exists, its middle value is at least $2.5 \times 10^{15}$ and the common sum of its rows, columns, and diagonals is at least $7.5 \times 10^{15}$.
 
 ## Background
 
