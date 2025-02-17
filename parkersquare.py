@@ -158,7 +158,7 @@ def count_by_primes():
     for base in count_forever(2):
         for num in range(base ** base):
             rep = _tobase(num, base)
-            rep = (0,) * (base - len(rep)) + rep
+            rep = rep + (0,) * (base - len(rep))
             if (base > 2) and (rep[base-1] == 0) and all(rep[i] < base - 1 for i in range(base-1)):
                 continue
             yield rep
