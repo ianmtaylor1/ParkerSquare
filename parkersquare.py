@@ -136,6 +136,34 @@ def count_forever(start):
         yield start
         start += 1
 
+def _tobase(n, b):
+    """Convert a number n to its base b representation, expressed as a
+    tuple of base b digits from least significant to most significant."""
+    if n == 0:
+        return (0,)
+    digits = []
+    while n > 0:
+        digits.append(n % b)
+        n //= b
+    return tuple(digits)
+
+def count_by_primes():
+    """Generator that will count over tuples of increasing length representing
+    the exponents in the prime factorization of positive integers. Will count
+    every integer exactly once and reach every integer eventually. Exponents go
+    smallest prime to largest. Each tuple is assumed to have an infinite string
+    of zeros after it for exponents of all other primes."""
+    # Count every 'base' digit, base 'base' number, skipping representations
+    # that are equivalent to the ones already seen
+    for base in count_forever(2):
+        for num in range(base ** base):
+            rep = _tobase(num, base)
+            rep = (0,) * (base - len(rep)) + rep
+            if (base > 2) and (rep[base-1] == 0) and all(rep[i] < base - 1 for i in range(base-1)):
+                continue
+            yield rep
+
+
 def search(start, end=None, report=None):
     """Search for Parker Squares whose center number is m^2, for m from
     'start' to 'end', inclusive. Report progress every 'report' values
