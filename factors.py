@@ -104,7 +104,7 @@ def _diophantus(pair1, pair2):
     return (a*p+b*q),(a*q-b*p)
 
 
-@functools.cache
+@functools.lru_cache(maxsize = None)
 def _primesumsquares(p):
     """Given a prime p == 1 (mod 4), exhaustively look for a pair of
     integers (a,b), with 0 < a < b, such that a^2 + b^2 == p."""
@@ -134,6 +134,7 @@ def _primesumsquares(p):
     raise FactorException(f"Algorithm did not find pair (a,b) for {p}")
 
 
+@functools.lru_cache(maxsize = None)
 def _primepowersumsquares(p, e):
     """Find the ways the nubmer p^e can be written as the sum
     of two squares, where p is a prime and e >= 1. Does not check
