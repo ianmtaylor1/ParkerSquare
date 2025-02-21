@@ -3,8 +3,8 @@ sums of squares from factorizations."""
 
 import math
 import itertools
-from functools import reduce
-from operator import mul
+import functools
+import operator
 
 
 class FactorException(Exception):
@@ -104,6 +104,7 @@ def _diophantus(pair1, pair2):
     return (a*p+b*q),(a*q-b*p)
 
 
+@functools.cache
 def _primesumsquares(p):
     """Given a prime p == 1 (mod 4), exhaustively look for a pair of
     integers (a,b), with 0 < a < b, such that a^2 + b^2 == p."""
@@ -137,8 +138,11 @@ def _primepowersumsquares(p, e):
     """Find the ways the nubmer p^e can be written as the sum
     of two squares, where p is a prime and e >= 1. Does not check
     whether p is prime."""
-    if (p % 4 == 3):
+    if (p % 4 == 3) and (e % 2 == 1):
         return set()
+    elif (p % 4 == 3) and (e % 2 == 0):
+        scale = p ** (e // 2)
+        return {(0, scale), (scale,0), (0, -scale), (-scale, 0)}
     elif (e == 0):
         return {(1,0),(0,1),(-1,0),(0,-1)}
     a,b = _primesumsquares(p)
@@ -147,6 +151,9 @@ def _primepowersumsquares(p, e):
     # Iterate up the powers using Diophantus's identity
     for _ in range(2, e+1):
         pairs = {_diophantus(x,y) for x,y in itertools.product(pairs, basepairs)}
+    # Check that this procedure produced the correct number of pairs
+    if len(pairs) != 4 * (e + 1):
+        raise FactorException("Failed to produce all pairs.")
     return pairs
 
 
@@ -179,7 +186,7 @@ def getnum(factors):
     if len(factors) == 0:
         return 1
     else:
-        return reduce(mul, (p**e for p,e in factors.items()))
+        return functools.reduce(operator.mul, (p**e for p,e in factors.items()))
 
 
 def tostring(factors):
