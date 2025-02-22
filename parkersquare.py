@@ -5,13 +5,10 @@ import itertools
 from datetime import datetime
 import timeit
 
+import gmpy2
+
 import factors
 
-###############################################################################
-
-def is_square(n):
-    """Returns true or false if n is a square integer."""
-    return (n >= 0) and (pow(math.isqrt(n), 2) == n)
 
 ###############################################################################
 
@@ -67,7 +64,7 @@ def getsquares(pairs):
     # Find out what the common sum of the square would be
     total = (pairs[0][0] + pairs[0][1]) * 3 // 2
     middle = total // 3
-    if not is_square(middle):
+    if not gmpy2.is_square(middle):
         raise Exception("Center number not square")
     # Pick two pairs to make up the corners of the magic square.
     # Due to reflectional and rotational symmetry, it doesn't matter in which
@@ -84,9 +81,9 @@ def getsquares(pairs):
         square[1][0] = total - square[0][0] - square[2][0]  # left
         square[1][2] = total - square[0][2] - square[2][2]  # right
         
-        nummissing = 4 - is_square(square[0][1]) + is_square(square[2][1]) + is_square(square[1][0]) + is_square(square[1][2])
+        nummissing = 4 - (gmpy2.is_square(square[0][1]) + gmpy2.is_square(square[2][1]) + gmpy2.is_square(square[1][0]) + gmpy2.is_square(square[1][2]))
         # Yield if anything interesting happened
-        if nummissing <= 2:
+        if nummissing <= 3:
             yield nummissing, square
 
 
@@ -204,7 +201,8 @@ def search():
 ###############################################################################
 
 if __name__ == '__main__':
-    import cProfile
-    cProfile.run('search()')
+    #import cProfile
+    #cProfile.run('search()')
+    search()
 
 
