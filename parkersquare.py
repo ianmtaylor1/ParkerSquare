@@ -12,6 +12,21 @@ import factors
 
 ###############################################################################
 
+def distfromsquare(n):
+    """Return the distance from a number n to the nearest square."""
+    if n < 0:
+        return abs(n)
+    root = gmpy2.isqrt(n)
+    sqbelow = root ** 2
+    err = n - sqbelow
+    if err <= root:
+        return int(err)
+    else:
+        return int(2 * root + 1 - err)
+
+
+###############################################################################
+
 
 def _getsumsquares_direct(n):
     """Find all unique ways n can be the sum of two squares of positive
@@ -53,13 +68,11 @@ def getsumsquares(fac):
 
 ###############################################################################
 
-def getsquares(pairs):
+def getbestsquare(pairs):
     """Check if a magic square can be constructed from the given
     pairs of numbers (a,b) such that a and b are square numbers
-    and a + b = n for a common n.
-    Iterate through all squares in the form of 3x3 lists representing
-    the magic square in row-major order.
-    'pairs' is a list of at least 4 tuples of integers that have a common sum.
+    and a + b = n for a common n. Return the "best" square as measured
+    by fewest non-square elements
     """
     # Find out what the common sum of the square would be
     total = (pairs[0][0] + pairs[0][1]) * 3 // 2
@@ -69,6 +82,8 @@ def getsquares(pairs):
     # Pick two pairs to make up the corners of the magic square.
     # Due to reflectional and rotational symmetry, it doesn't matter in which
     # order we place the pairs
+    besterror = (4, total)
+    bestsquare = None
     for corners1,corners2 in itertools.combinations(pairs, 2):
         # See if the three pairs can fit into the corners and let the other
         # spaces be also filled with squares
@@ -80,11 +95,33 @@ def getsquares(pairs):
         square[2][1] = total - square[2][0] - square[2][2]  # bottom
         square[1][0] = total - square[0][0] - square[2][0]  # left
         square[1][2] = total - square[0][2] - square[2][2]  # right
-        
-        nummissing = 4 - (gmpy2.is_square(square[0][1]) + gmpy2.is_square(square[2][1]) + gmpy2.is_square(square[1][0]) + gmpy2.is_square(square[1][2]))
-        # Yield if anything interesting happened
-        if nummissing <= 3:
-            yield nummissing, square
+        # Calculate the error
+        nummissing = 4
+        totalerror = 0
+        # top
+        if gmpy2.is_square(square[0][1]):
+            nummissing -= 1
+        else:
+            totalerror += distfromsquare(square[0][1])
+        # bottom
+        if gmpy2.is_square(square[2][1]):
+            nummissing -= 1
+        else:
+            totalerror += distfromsquare(square[2][1])
+        # left
+        if gmpy2.is_square(square[1][0]):
+            nummissing -= 1
+        else:
+            totalerror += distfromsquare(square[1][0])
+        # right
+        if gmpy2.is_square(square[1][2]):
+            nummissing -= 1
+        else:
+            totalerror += distfromsquare(square[1][2])
+        if (nummissing, totalerror) < besterror:
+            besterror = (nummissing, totalerror)
+            bestsquare = square
+    return besterror, bestsquare
 
 
 ###############################################################################
@@ -167,36 +204,33 @@ def search():
     primes = (p for p in factors.primes() if p % 4 == 1)
     cachedprimes = []
     
-    reportfreq = 100
-    qssfound = 0
-    squaresfound = 0
+    besterror = (5,0)
+    bestsquare = None
     for count,fac in enumerate(iter_middle()):
         # See if there are at least 4 pairs of squares that sum to 2m^2
         pairs = getborderpairs(fac)
         if pairs is not None:
-            qssfound += 1
-            for nummissing,square in getsquares(pairs):
-                squaresfound += 1
-                if nummissing == 0:
-                    print(
-                        "*******************",
-                        "** PARKER SQUARE **",
-                        "*******************", 
-                        f" {square}\n {square_sqrt(square)}", 
-                        sep="\n", flush=True
-                    )
-                    return square
-                elif nummissing <= 2:
-                    print(f"Partial square:\n {square}\n {square_sqrt(square)}", flush = True)
-        # Report progress so far
-        if (count + 1) % reportfreq == 0:
-            print(f"#{count+1}: {factors.tostring(fac)} = {factors.getnum(fac)},",
-                  f"{qssfound}/{reportfreq} candidate middle numbers,",
-                  f"{squaresfound} interesting squares",
-                  flush = True)
-            qssfound = 0
-            squaresfound = 0
-
+            (nummissing, totalerror),square = getbestsquare(pairs)
+            if nummissing == 0:
+                print(
+                    "*******************",
+                    "** PARKER SQUARE **",
+                    "*******************", 
+                    f" {square}\n {square_sqrt(square)}", 
+                    sep="\n", flush=True
+                )
+                return square
+            # Report progress so far
+            if (nummissing, totalerror) < besterror:
+                besterror = (nummissing, totalerror)
+                bestsquare = square
+                print(f"#{count+1}: {factors.tostring(fac)} = {factors.getnum(fac)},",
+                      flush = True)
+                print("New Best:", f"{bestsquare}", 
+                      f"Non-squares = {nummissing}, Total error = {totalerror}",
+                      sep="\n", flush=True)
+            elif (count + 1) % 100 == 0:
+                print(f"#{count+1}", flush=True)
 
 ###############################################################################
 
