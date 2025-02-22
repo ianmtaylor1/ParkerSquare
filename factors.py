@@ -23,10 +23,10 @@ def _countup():
 def isprime(n):
     """Return True if n is prime, False otherwise."""
     for p in _countup():
-        if n % p == 0:
-            return False
-        elif p * p > n:
+        if p * p > n:
             return True
+        elif n % p == 0:
+            return False
 
 
 def primes():
@@ -101,13 +101,14 @@ def _diophantus(pair1, pair2):
     (x,y) such that x^2 + y^2 = m*n."""
     a,b = pair1
     p,q = pair2
-    return (a*p+b*q),(a*q-b*p)
+    return (a*p-b*q),(a*q+b*p)
 
 
 @functools.lru_cache(maxsize = None)
 def _primesumsquares(p):
     """Given a prime p == 1 (mod 4), exhaustively look for a pair of
-    integers (a,b), with 0 < a < b, such that a^2 + b^2 == p."""
+    integers (a,b), with 0 < a < b, such that a^2 + b^2 == p. Will
+    return exactly one pair."""
     # Base cases:
     if p < 2:
         raise FactorException("Got non-prime.")
@@ -138,25 +139,41 @@ def _primesumsquares(p):
 def _primepowersumsquares(p, e):
     """Find the ways the nubmer p^e can be written as the sum
     of two squares, where p is a prime and e >= 1. Does not check
-    whether p is prime."""
-    if (p % 4 == 3) and (e % 2 == 1):
-        return set()
+    whether p is prime. Will return all pairs up to multiplication
+    by a unit."""
+    # Base cases
+    if e == 0:
+        return[(1,0)]
+    elif (p % 4 == 3) and (e % 2 == 1):
+        return []
     elif (p % 4 == 3) and (e % 2 == 0):
-        scale = p ** (e // 2)
-        return {(0, scale), (scale,0), (0, -scale), (-scale, 0)}
-    elif (e == 0):
-        return {(1,0),(0,1),(-1,0),(0,-1)}
+        return [(p ** (e // 2),0)]
+    elif (p == 2) and (e % 2 == 1):
+        return [(2 ** (e // 2), 2 ** (e // 2))]
+    elif (p == 2) and (e % 2 == 0):
+        return [(2 ** (e // 2), 0)]
+    # Find the base pair for the prime
     a,b = _primesumsquares(p)
-    basepairs = {(a,b),(-a,b),(a,-b),(-a,-b),(b,a),(-b,a),(b,-a),(-b,-a)}
-    pairs = basepairs
-    # Iterate up the powers using Diophantus's identity
-    for _ in range(2, e+1):
-        pairs = {_diophantus(x,y) for x,y in itertools.product(pairs, basepairs)}
+    # Create lists of powers of that pair
+    powers = [(1,0)] + [None] * e
+    reversepowers = [(1,0)] + [None] * e
+    for i in range(1, e + 1):
+        powers[i]        = _diophantus((a,b), powers[i-1])
+        reversepowers[i] = _diophantus((b,a), reversepowers[i-1])
+    # Combine lists pairwise with one in reverse order
+    pairs = [_diophantus(x,y) for x,y in zip(powers, reversed(reversepowers))]
     # Check that this procedure produced the correct number of pairs
-    if len(pairs) != 4 * (e + 1):
+    if len(pairs) != (e + 1):
         raise FactorException("Failed to produce all pairs.")
     return pairs
 
+def _associates(pairs):
+    """Given a list of pairs of integers, returns a list four times as long
+    with all 'associates' of those pairs. i.e. if the pairs (a,b) represent
+    complex numbers a + bi, this function returns all pairs multiplied by the
+    complex units: 1, i, -1, and -i."""
+    units = [(1,0),(0,1),(-1,0),(0,-1)]
+    return [_diophantus(x,y) for x,y in itertools.product(units, pairs)]
 
 def getsumsquares(factors):
     """Given the prime factorization of a positive integer, return all pairs of
@@ -165,17 +182,19 @@ def getsumsquares(factors):
     # Building up from 1 using each prime power in the factorization, apply
     # Diophantus's identity to each combination of sums of squares building
     # up to n.
-    pairs = {(0,1),(1,0),(0,-1),(-1,0)}
+    pairs = [(1,0)]
     for p,e in factors.items():
-        if (p % 4 == 1):
+        if (p % 4 == 1) or (p == 2):
             fpairs = _primepowersumsquares(p,e)
-            pairs = {_diophantus(x,y) for x,y in itertools.product(pairs, fpairs)}
+            pairs = [_diophantus(x,y) for x,y in itertools.product(pairs, fpairs)]
         elif (p % 4 == 3) and (e % 2 == 1):
-            pairs = set()
+            pairs = []
             break
         elif (p % 4 == 3) and (e % 2 == 0):
             scale = p ** (e // 2)
-            pairs = {(a * scale, b * scale) for a,b in pairs}
+            pairs = [(a * scale, b * scale) for a,b in pairs]
+    # Complete by finding all associates
+    pairs = _associates(pairs)
     # Compare the number produced to the expected number (Jacobi)
     if len(pairs) != countsumsquares(factors):
         raise FactorException("Failed to produce all pairs.")
