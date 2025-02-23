@@ -5,24 +5,7 @@ import itertools
 from datetime import datetime
 import timeit
 
-import gmpy2
-
 import factors
-
-
-###############################################################################
-
-def distfromsquare(n):
-    """Return the distance from a number n to the nearest square."""
-    if n < 0:
-        return abs(n)
-    root = gmpy2.isqrt(n)
-    sqbelow = root ** 2
-    err = n - sqbelow
-    if err <= root:
-        return int(err)
-    else:
-        return int(2 * root + 1 - err)
 
 
 ###############################################################################
@@ -77,51 +60,30 @@ def getbestsquare(pairs):
     # Find out what the common sum of the square would be
     total = (pairs[0][0] + pairs[0][1]) * 3 // 2
     middle = total // 3
-    if not gmpy2.is_square(middle):
-        raise Exception("Center number not square")
+    # Place all numbers from pairs into one set
+    allsquares = {num for pair in pairs for num in pair}
     # Pick two pairs to make up the corners of the magic square.
     # Due to reflectional and rotational symmetry, it doesn't matter in which
     # order we place the pairs
-    besterror = (4, total)
+    bestfit = 0
     bestsquare = None
     for corners1,corners2 in itertools.combinations(pairs, 2):
-        # See if the three pairs can fit into the corners and let the other
+        # See if the two pairs can fit into the corners and let the other
         # spaces be also filled with squares
-        square = [[corners1[0], 0, corners2[0]],
-                  [0, middle, 0],
-                  [corners2[1], 0, corners1[1]]]
-        # Try to fill the missing numbers
-        square[0][1] = total - square[0][0] - square[0][2]  # top
-        square[2][1] = total - square[2][0] - square[2][2]  # bottom
-        square[1][0] = total - square[0][0] - square[2][0]  # left
-        square[1][2] = total - square[0][2] - square[2][2]  # right
-        # Calculate the error
-        nummissing = 4
-        totalerror = 0
-        # top
-        if gmpy2.is_square(square[0][1]):
-            nummissing -= 1
-        else:
-            totalerror += distfromsquare(square[0][1])
-        # bottom
-        if gmpy2.is_square(square[2][1]):
-            nummissing -= 1
-        else:
-            totalerror += distfromsquare(square[2][1])
-        # left
-        if gmpy2.is_square(square[1][0]):
-            nummissing -= 1
-        else:
-            totalerror += distfromsquare(square[1][0])
-        # right
-        if gmpy2.is_square(square[1][2]):
-            nummissing -= 1
-        else:
-            totalerror += distfromsquare(square[1][2])
-        if (nummissing, totalerror) < besterror:
-            besterror = (nummissing, totalerror)
-            bestsquare = square
-    return besterror, bestsquare
+        top = total - corners1[0] - corners2[0]  # top
+        left = total - corners1[0] - corners2[1]  # left
+        numfit = (left in allsquares) + (top in allsquares)
+        # Save if this is a good square
+        if numfit > bestfit:
+            bestfit = numfit
+            bestsquare = [
+                [corners1[0], top,                  corners2[0]          ],
+                [left,        middle,               total - middle - left],
+                [corners2[1], total - middle - top, corners1[1]          ]
+            ]
+        if bestfit == 2:
+            break
+    return bestfit, bestsquare
 
 
 ###############################################################################
@@ -210,27 +172,28 @@ def search():
         # See if there are at least 4 pairs of squares that sum to 2m^2
         pairs = getborderpairs(fac)
         if pairs is not None:
-            (nummissing, totalerror),square = getbestsquare(pairs)
-            if nummissing == 0:
+            fit,square = getbestsquare(pairs)
+            if fit == 2:
                 print(
+                    "*******************",
+                    f"factors.tostring(fac)",
                     "*******************",
                     "** PARKER SQUARE **",
                     "*******************", 
-                    f" {square}\n {square_sqrt(square)}", 
+                    f" {square}\n = {square_sqrt(square)}^2", 
                     sep="\n", flush=True
                 )
                 return square
+            elif fit == 1:
+                print(
+                    f"factors.tostring(fac)",
+                    "Hourglass:",
+                    f" {square}\n",
+                    sep = "\n", flush = True
+                )
             # Report progress so far
-            if (nummissing, totalerror) < besterror:
-                besterror = (nummissing, totalerror)
-                bestsquare = square
-                print(f"#{count+1}: {factors.tostring(fac)} = {factors.getnum(fac)},",
-                      flush = True)
-                print("New Best:", f"{bestsquare}", 
-                      f"Non-squares = {nummissing}, Total error = {totalerror}",
-                      sep="\n", flush=True)
             elif (count + 1) % 100 == 0:
-                print(f"#{count+1}", flush=True)
+                print(f"#{count+1}: {factors.tostring(fac)} = {factors.getnum(fac)}", flush=True)
 
 ###############################################################################
 
