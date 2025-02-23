@@ -4,6 +4,7 @@ import math
 import itertools
 from datetime import datetime
 import timeit
+import multiprocessing as mp
 
 import factors
 
@@ -54,8 +55,8 @@ def getsumsquares(fac):
 def getbestsquare(pairs):
     """Check if a magic square can be constructed from the given
     pairs of numbers (a,b) such that a and b are square numbers
-    and a + b = n for a common n. Return the "best" square as measured
-    by fewest non-square elements
+    and a + b = n for a common n. Return a square if one exists,
+    if not, return an "hourglass" if one exists.
     """
     # Find out what the common sum of the square would be
     total = (pairs[0][0] + pairs[0][1]) * 3 // 2
@@ -86,17 +87,13 @@ def getbestsquare(pairs):
     return bestfit, bestsquare
 
 
-###############################################################################
-
 def getborderpairs(fac):
     """For a number m representing the square root of the central value
     of the Parker square, passed to this function in terms of its prime
     factorization, find the possible pairs of squares to surround
     the center value. These are the unique ways two squares can add to
     2*m^2, if four such unique ways exist. If they exist, return a list
-    of tuples of all these pairs. If they don't exist, return None. If
-    the only pairs of such squares would all have a common factor with
-    m^2, then skip."""
+    of tuples of all these pairs. If they don't exist, return None."""
     # Adjust the prime factorization to be for 2m^2
     fac = {p:2*e for p,e in fac.items()}
     fac[2] = fac.get(2, 0) + 1
@@ -109,6 +106,20 @@ def getborderpairs(fac):
         raise Exception(f"Expected {numways} pairs, got {len(pairs)}")
     return pairs
 
+
+def check_middle(fac):
+    """Check one square rooted middle number, given in terms of its prime
+    factorization, for any parker squares that could work. Return a tuple of
+    fac,index,square where fac is the original argument, index is 0 if no
+    square is found, 1 if an 'hourglass' is found, and 2 if a full square 
+    is found. For 1 or 2, the square is last, otherwise None."""
+    pairs = getborderpairs(fac)
+    if pairs is not None:
+        return (fac,*getbestsquare(pairs))
+    else:
+        return (fac,0,None)
+
+###############################################################################
 
 def square_sqrt(square):
     return [[math.isqrt(n) for n in row] for row in square]
@@ -158,42 +169,38 @@ def iter_middle():
         yield {p:e for p,e in zip(cachedprimes, exponents) if e > 0}
 
 
-def search():
+def search(procs=None):
     """Search for Parker Squares by enumerating prime factorizations of
     the square root of the central number. Will return immediately if
     a Parker Square is found, otherwise, will loop forever."""
-    #Iterators of primes
-    primes = (p for p in factors.primes() if p % 4 == 1)
-    cachedprimes = []
     
-    besterror = (5,0)
-    bestsquare = None
-    for count,fac in enumerate(iter_middle()):
+    pool = mp.Pool(procs)
+    values = enumerate(pool.imap(check_middle, iter_middle(), chunksize=100))
+    for count,(fac,fit,square) in values:
         # See if there are at least 4 pairs of squares that sum to 2m^2
-        pairs = getborderpairs(fac)
-        if pairs is not None:
-            fit,square = getbestsquare(pairs)
-            if fit == 2:
-                print(
-                    "*******************",
-                    f"factors.tostring(fac)",
-                    "*******************",
-                    "** PARKER SQUARE **",
-                    "*******************", 
-                    f" {square}\n = {square_sqrt(square)}^2", 
-                    sep="\n", flush=True
-                )
-                return square
-            elif fit == 1:
-                print(
-                    f"factors.tostring(fac)",
-                    "Hourglass:",
-                    f" {square}\n",
-                    sep = "\n", flush = True
-                )
-            # Report progress so far
-            elif (count + 1) % 100 == 0:
-                print(f"#{count+1}: {factors.tostring(fac)} = {factors.getnum(fac)}", flush=True)
+        #fit,square = check_middle(fac)
+        if fit == 2:
+            print(
+                "*******************",
+                f"factors.tostring(fac)",
+                "*******************",
+                "** PARKER SQUARE **",
+                "*******************", 
+                f" {square}\n = {square_sqrt(square)}^2", 
+                sep="\n", flush=True
+            )
+            return square
+        elif fit == 1:
+            print(
+                f"factors.tostring(fac)",
+                "Hourglass:",
+                f" {square}\n",
+                sep = "\n", flush = True
+            )
+        # Report progress so far
+        if (count + 1) % 100 == 0:
+            datestr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"{datestr} #{count+1}: {factors.tostring(fac)} = {factors.getnum(fac)}", flush=True)
 
 ###############################################################################
 
