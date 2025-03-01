@@ -6,7 +6,7 @@ opts = -O1
 all: parkersquare test
 
 clean:
-	rm -v parkersquare test *.o
+	$(RM) -v parkersquare test *.o
 
 # Executables
 parkersquare: main.o primes.o squares.o search.o
