@@ -48,7 +48,9 @@ size_t tostring(char *buf, size_t buflen, primefactor_t *factors, size_t faclen)
 */
 bool isprime(unsigned long n) {
     unsigned long p, psquared;
-    if (n < 2 || n % 2 == 0) return false;
+    if (n < 2) return false;
+    if (n == 2 || n == 3) return true;
+    if (n % 2 == 0) return false;
     p = 3;
     psquared = 9;
     while (psquared < n && n % p != 0) {
