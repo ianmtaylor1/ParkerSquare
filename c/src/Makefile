@@ -2,14 +2,20 @@ warnings = -Wall -Wextra
 libs = -lgmp
 opts = -O1
 
+# Main targets
 all: parkersquare test
 
+clean:
+	rm -v parkersquare test *.o
+
+# Executables
 parkersquare: main.o primes.o squares.o search.o
 	gcc $^ $(libs) -o $@
 
 test: test.o primes.o squares.o search.o 
 	gcc $^ $(libs) -o $@
 
+# Objects
 primes.o: primes.c primes.h
 	gcc -c $(opts) $(warnings) -o $@ $<
 
