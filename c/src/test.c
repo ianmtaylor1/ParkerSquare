@@ -6,6 +6,8 @@
 #include "squares.h"
 #include "search.h"
 
+/* primes.c tests */
+
 void test_tovalue() {
     primefactor_t factors[5] = {{2,5}, {3,2}, {5,1}, {11,2}, {41,7}};
     mpz_t value;
@@ -65,7 +67,53 @@ void testprimes() {
     test_enumerate();
 }
 
+/* squares.c tests */
+
+void test_countss() {
+    primefactor_t factors1[5] = {{2,5}, {3,2}, {5,1}, {11,2}, {41,7}};
+    primefactor_t factors2[5] = {{2,5}, {3,3}, {5,1}, {11,2}, {41,7}};
+    printf("Expected count:    64\n");
+    printf("countsumsquares(): %lu\n", countsumsquares(factors1, 5));
+    printf("Expected count:    0\n");
+    printf("countsumsquares(): %lu\n", countsumsquares(factors2, 5));
+}
+
+void test_primess() {
+    pair_t out;
+    unsigned long primes[7] = {2, 3, 5, 11, 13, 1009, 1019};
+    unsigned long expected[7][2] = {{1, 1}, {0, 0}, {1, 2}, {0, 0}, {2, 3}, {15, 28}, {0, 0}};
+    int i;
+    pair_init(&out);
+    for (i = 0; i < 7; i++) {
+        unsigned long p = primes[i];
+        unsigned long exp[2] = {expected[i][0], expected[i][1]};
+        size_t res = primesumsquares(&out, p);
+        printf("Prime: %lu\n", primes[i]);
+        if (p % 4 == 3) {
+            printf("Expected: 0\n");
+            printf("Found:    %lu\n", res);
+        } else {
+            printf(    "Expected: %lu^2 + %lu^2 = %lu\n", exp[0], exp[1], p);
+            gmp_printf("Found:    %Zd^2 + %Zd^2 = %lu\n", out.first, out.second, p);
+        }
+    }
+}
+
+void test_primepowerss() {
+
+}
+
+void testsquares() {
+    printf("\n*** Testing sum of squares functions.\n");
+    test_countss();
+    test_primess();
+    test_primepowerss();
+}
+
+/* Run all tests */
+
 int main() {
     printf("Hello world! From test.\n");
     testprimes();
+    testsquares();
 }
