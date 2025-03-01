@@ -10,7 +10,7 @@
 Compute the value of the number given by a prime factorization and store
 the result in the mpz_t number out.
 */
-void tovalue(mpz_t out, primefactor_t *factors, size_t len) {
+void tovalue(mpz_t out, const primefactor_t *factors, size_t len) {
     mpz_t tmp;
     size_t i;
     mpz_init(tmp);
@@ -27,7 +27,7 @@ Represent the prime factorization as a string, storing at most buflen
 characters in buf, including the null terminator. Uses snprintf behind
 the scenes.
 */
-size_t tostring(char *buf, size_t buflen, primefactor_t *factors, size_t faclen) {
+size_t tostring(char *buf, size_t buflen, const primefactor_t *factors, size_t faclen) {
     size_t start = 0;
     size_t idx;
     size_t written;
