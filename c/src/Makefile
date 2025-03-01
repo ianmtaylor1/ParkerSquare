@@ -1,6 +1,6 @@
 warnings = -Wall -Wextra
 libs = -lgmp
-opts = -O1
+opts = -O2
 
 # Main targets
 all: parkersquare test
