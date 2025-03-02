@@ -35,6 +35,7 @@ factorization can be written as the sum of two squares.
 size_t countsumsquares(const primefactor_t *factors, size_t len) {
     size_t count = 4;
     size_t i;
+    // Loop over each prime factor, add contribution
     for (i = 0; i < len; i++) {
         if (factors[i].p % 4 == 1) {
             count *= factors[i].e + 1;
@@ -101,13 +102,13 @@ produce a new pair which is stored in out. If ab represents
 a complex number (a + bi) and cd respresents (c + di), then
 the result represents (a+bi)(c+di)'s real and imaginary components.
 */
-void diophantus(pair_t *out, pair_t ab, pair_t cd) {
+void diophantus(pair_t *out, const pair_t *ab, const pair_t *cd) {
     // a*c - b*d
-    mpz_mul(out->first, ab.first, cd.first);
-    mpz_submul(out->first, ab.second, cd.second);
+    mpz_mul(out->first, ab->first, cd->first);
+    mpz_submul(out->first, ab->second, cd->second);
     // a*d + b*c
-    mpz_mul(out->second, ab.first, cd.second);
-    mpz_addmul(out->second, ab.second, cd.first);
+    mpz_mul(out->second, ab->first, cd->second);
+    mpz_addmul(out->second, ab->second, cd->first);
 }
 
 /*
@@ -119,7 +120,12 @@ find 0, 1, or e+1 such pairs, depending on the prime and power.
 */
 size_t primepowersumsquares(pair_t *out, primefactor_t pf) {
     // Break into cases based on prime and power
-    if (pf.p == 2 && pf.e % 2 == 0) {
+    if (pf.e == 0) {
+        // Always one.
+        mpz_set_ui(out[0].first, 1);
+        mpz_set_ui(out[0].second, 0);
+        return 1;
+    } else if (pf.p == 2 && pf.e % 2 == 0) {
         // (2^(e/2), 0)
         mpz_ui_pow_ui(out[0].first, pf.p, pf.e / 2);
         mpz_set_ui(out[0].second, 0);
@@ -155,19 +161,19 @@ size_t primepowersumsquares(pair_t *out, primefactor_t pf) {
         mpz_set(rev.second, base.first);
         // Initialize the first element of each array to 'one'
         mpz_set_ui(out[0].first, 1);
-        mpz_set_ui(out[1].second, 0);
+        mpz_set_ui(out[0].second, 0);
         mpz_set_ui(tmp1[0].first, 1);
-        mpz_set_ui(tmp1[1].second, 0);
+        mpz_set_ui(tmp1[0].second, 0);
         mpz_set_ui(tmp2[0].first, 1);
-        mpz_set_ui(tmp2[1].second, 0);
+        mpz_set_ui(tmp2[0].second, 0);
         // Construct the rest of each array with powers of each base
         for (i = 1; i <= pf.e; i++) {
-            diophantus(&tmp1[i], tmp1[i-1], base);
-            diophantus(&tmp2[i], tmp2[i-1], rev);
+            diophantus(&tmp1[i], &tmp1[i-1], &base);
+            diophantus(&tmp2[i], &tmp2[i-1], &rev);
         }
         // Combine the arrays
         for (i = 0; i <= pf.e; i++) {
-            diophantus(&out[i], tmp1[i], tmp2[pf.e - i]);
+            diophantus(&out[i], &tmp1[i], &tmp2[pf.e - i]);
         }
 
         pair_array_clear(tmp1, pf.e);
@@ -181,7 +187,35 @@ size_t primepowersumsquares(pair_t *out, primefactor_t pf) {
     }
 }
 
+/*
+Fill out, an array of size (at least) 4 of pair_t, with the "units":
+(1, 0), (0, 1), (-1, 0), (0, -1)
+*/
+void getunits(pair_t *out) {
+    mpz_set_si(out[0].first, 1);
+    mpz_set_si(out[0].second, 0);
+    mpz_set_si(out[1].first, 0);
+    mpz_set_si(out[1].second, 1);
+    mpz_set_si(out[2].first, -1);
+    mpz_set_si(out[2].second, 0);
+    mpz_set_si(out[3].first, 0);
+    mpz_set_si(out[3].second, -1);
+}
 
+/*
+For two arrays, perform diophantus(x,y) for x in arr1 for y in arr2, producing
+len1 * len2 total numbers, stored in out. Out should therefore have size at 
+least len1 * len2.
+*/
+void diophantus_prod(pair_t *out, pair_t *arr1, size_t len1, pair_t *arr2, size_t len2) {
+    size_t i,j;
+    for (i = 0; i < len1; i++) {
+        for (j = 0; j < len2; j++) {
+            size_t outidx = i * len2 + j;
+            diophantus(&out[outidx], &arr1[i], &arr2[j]);
+        }
+    }
+}
 
 /*
 Find all pairs (a,b) such that a^2+b^2 equals the number represented
@@ -191,6 +225,52 @@ by countsumsquares(pf, pflen). This function produces *all* such pairs,
 that is, negating an element or reversing the elements produces a different
 pair.
 */
-size_t getsumsquares(pair_t *out, const primefactor_t *pf, size_t pflen) {
-
+void getsumsquares(pair_t *out, const primefactor_t *pf, size_t pflen) {
+    pair_t *prev = NULL;
+    size_t prevlen = 0;
+    pair_t units[4];
+    size_t i;
+    // Check for the case of no pairs
+    if (countsumsquares(pf, pflen) == 0) {
+        return;
+    }
+    // Iterate over prime factors
+    for (i = 0; i < pflen; i++) {
+        // Get the pairs for the current prime factor
+        pair_t *cur;
+        size_t curlen, curlenmax;
+        curlenmax = pf[i].e + 1;
+        cur = (pair_t *)malloc(curlenmax * sizeof(pair_t));
+        pair_array_init(cur, curlenmax);
+        curlen = primepowersumsquares(cur, pf[i]); // We know this is not zero
+        // Combine with the pairs for previous prime factors
+        if (prev == NULL) {
+            prev = cur;
+            prevlen = curlen;
+        } else {
+            // create new array to hold computation results
+            pair_t *next;
+            size_t nextlen;
+            nextlen = prevlen * curlen;
+            next = (pair_t *)malloc(nextlen * sizeof(pair_t));
+            pair_array_init(next, nextlen);
+            // Combine
+            diophantus_prod(next, prev, prevlen, cur, curlen);
+            // free old array and assign new array
+            pair_array_clear(prev, prevlen);
+            free(prev);
+            prevlen = nextlen;
+            prev = next;
+        }
+        // Free current memory
+        pair_array_clear(cur, curlenmax);
+        free(cur);
+    }
+    //combine with units    
+    pair_array_init(units, 4);
+    diophantus_prod(out, prev, prevlen, units, 4);
+    pair_array_clear(units, 4);
+    // Free the memory of the previous list
+    pair_array_clear(prev, prevlen);
+    free(prev);
 }
