@@ -40,7 +40,7 @@ size_t countsumsquares(const primefactor_t *factors, size_t len) {
         if (factors[i].p % 4 == 1) {
             count *= factors[i].e + 1;
         } else if (factors[i].p % 4 == 3 && factors[i].e % 2 == 1) {
-            count = 0;
+            return 0;
         }
         // If p == 2, or the power of a prime == 3(mod4) is even, no change
     }
@@ -160,8 +160,6 @@ size_t primepowersumsquares(pair_t *out, primefactor_t pf) {
         mpz_set(rev.first, base.second);
         mpz_set(rev.second, base.first);
         // Initialize the first element of each array to 'one'
-        mpz_set_ui(out[0].first, 1);
-        mpz_set_ui(out[0].second, 0);
         mpz_set_ui(tmp1[0].first, 1);
         mpz_set_ui(tmp1[0].second, 0);
         mpz_set_ui(tmp2[0].first, 1);
@@ -219,58 +217,53 @@ void diophantus_prod(pair_t *out, pair_t *arr1, size_t len1, pair_t *arr2, size_
 
 /*
 Find all pairs (a,b) such that a^2+b^2 equals the number represented
-by the prime factorization pf. Store the pairs in out and return the
-number of pairs found. This will always find the number of pairs identified
-by countsumsquares(pf, pflen). This function produces *all* such pairs,
-that is, negating an element or reversing the elements produces a different
-pair.
+by the prime factorization pf. Store the pairs in out. This will always
+find the number of pairs identified by countsumsquares(pf, pflen). This 
+function produces *all* such pairs, that is, negating an element or reversing
+the elements produces a different pair.
 */
-void getsumsquares(pair_t *out, const primefactor_t *pf, size_t pflen) {
-    pair_t *prev = NULL;
-    size_t prevlen = 0;
-    pair_t units[4];
-    size_t i;
+void getsumsquares(pair_t *out, const primefactor_t *pf, size_t pflen) { // TODO: this function needs to be better
+    pair_t *running; // Holds running array of pairs
+    size_t runninglen; // Length of running array
     // Check for the case of no pairs
     if (countsumsquares(pf, pflen) == 0) {
         return;
     }
+    // Initialize running array and fill with units
+    running = (pair_t *)malloc(4 * sizeof(pair_t));
+    pair_array_init(running, 4);
+    getunits(running);
+    runninglen = 4;
     // Iterate over prime factors
-    for (i = 0; i < pflen; i++) {
-        // Get the pairs for the current prime factor
-        pair_t *cur;
-        size_t curlen, curlenmax;
+    for (size_t i = 0; i < pflen; i++) {
+        // Get the pairs for the current prime factor and combine with the running list
+        pair_t *cur, *tmp;
+        size_t curlen, curlenmax, tmplen;
         curlenmax = pf[i].e + 1;
         cur = (pair_t *)malloc(curlenmax * sizeof(pair_t));
         pair_array_init(cur, curlenmax);
         curlen = primepowersumsquares(cur, pf[i]); // We know this is not zero
         // Combine with the pairs for previous prime factors
-        if (prev == NULL) {
-            prev = cur;
-            prevlen = curlen;
-        } else {
-            // create new array to hold computation results
-            pair_t *next;
-            size_t nextlen;
-            nextlen = prevlen * curlen;
-            next = (pair_t *)malloc(nextlen * sizeof(pair_t));
-            pair_array_init(next, nextlen);
-            // Combine
-            diophantus_prod(next, prev, prevlen, cur, curlen);
-            // free old array and assign new array
-            pair_array_clear(prev, prevlen);
-            free(prev);
-            prevlen = nextlen;
-            prev = next;
-        }
-        // Free current memory
+        tmplen = runninglen * curlen;
+        tmp = (pair_t *)malloc(tmplen * sizeof(pair_t));
+        pair_array_init(tmp, tmplen);
+        // Combine
+        diophantus_prod(tmp, running, runninglen, cur, curlen);
+        // free old array and point to new array
+        pair_array_clear(running, runninglen);
+        free(running);
+        runninglen = tmplen;
+        running = tmp;
+        // Free memory for current factor
         pair_array_clear(cur, curlenmax);
         free(cur);
     }
-    //combine with units    
-    pair_array_init(units, 4);
-    diophantus_prod(out, prev, prevlen, units, 4);
-    pair_array_clear(units, 4);
-    // Free the memory of the previous list
-    pair_array_clear(prev, prevlen);
-    free(prev);
+    // Copy values into out
+    for (size_t i = 0; i < runninglen; i++) {
+        mpz_set(out[i].first, running[i].first);
+        mpz_set(out[i].second, running[i].second);
+    }
+    // Free the memory of the running list
+    pair_array_clear(running, runninglen);
+    free(running);
 }

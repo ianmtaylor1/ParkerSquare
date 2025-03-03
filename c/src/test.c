@@ -104,9 +104,8 @@ void test_primepowerss() {
     pair_t out[100]; // intentionally oversized
     primefactor_t primepowers[9] = {{2,0}, {3,0}, {5,0}, {2, 5}, {2, 6}, {11, 1}, {11, 2}, {13, 5}, {13,6}};
     size_t expected[9] = {1, 1, 1, 1, 1, 0, 1, 6, 7};
-    int i;
     pair_array_init(out, 100);
-    for (i = 0; i < 9; i++) {
+    for (int i = 0; i < 9; i++) {
         unsigned int j;
         size_t count = primepowersumsquares(out, primepowers[i]);
         printf("Prime power %lu^%lu:\n", primepowers[i].p, primepowers[i].e);
@@ -124,7 +123,21 @@ void test_primepowerss() {
 }
 
 void test_getss() {
-
+    primefactor_t factors1[4] = {{2, 1}, {3, 2}, {5, 3}, {13, 1}};
+    pair_t out[100]; // intentionally oversized
+    size_t count;
+    pair_array_init(out, 100);
+    count = countsumsquares(factors1, 4);
+    getsumsquares(out, factors1, 4);
+    printf("Expected: 32 sums to 29250\n");
+    for (size_t j = 0; j < count; j++) {
+        mpz_t sum;
+        mpz_init_set_ui(sum, 0);
+        mpz_addmul(sum, out[j].first, out[j].first);
+        mpz_addmul(sum, out[j].second, out[j].second);
+        gmp_printf("%Zd = (%Zd)^2 + (%Zd)^2\n", sum, out[j].first, out[j].second);
+        mpz_clear(sum);
+    }
 }
 
 void testsquares() {
