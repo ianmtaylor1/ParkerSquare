@@ -148,10 +148,17 @@ void testsquares() {
     test_getss();
 }
 
+/* search.c tests */
+
+void testsearch() {
+    printf("\n*** Testing search functions.\n");
+}
+
 /* Run all tests */
 
 int main() {
     printf("Hello world! From test.\n");
     testprimes();
     testsquares();
+    testsearch();
 }
