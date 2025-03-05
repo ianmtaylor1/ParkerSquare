@@ -16,4 +16,6 @@ size_t tostring(char *buf, size_t buflen, const primefactor_t *factors, size_t f
 bool isprime(unsigned long n);
 unsigned long nextprime(unsigned long n);
 
+bool validate(const primefactor_t *fac, size_t len);
+
 #endif //ifndef PRIMES_H

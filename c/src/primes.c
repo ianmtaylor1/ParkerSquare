@@ -70,3 +70,19 @@ unsigned long nextprime(unsigned long n) {
     }
     return i;
 }
+
+/*
+Validate a prime factorization, i.e., verify that all primes are prime and
+there are no duplicate values. If a factorization is not valid, then other
+functions involving this factorization may not work as expected.
+*/
+bool validate(const primefactor_t *fac, size_t len) {
+    bool isvalid = true;
+    for (size_t i = 0; i < len; i++) {
+        isvalid = isvalid && isprime(fac[i].p);
+        for (size_t j = i + 1; j < len; j++) {
+            isvalid = isvalid && (fac[j].p != fac[i].p);
+        }
+    }
+    return isvalid;
+}

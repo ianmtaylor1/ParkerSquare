@@ -61,11 +61,28 @@ void test_enumerate() {
     printf("\n");
 }
 
+void test_validate() {
+    primefactor_t factors1[5] = {{2,5}, {3,2}, {5,1}, {11,2}, {41,7}};
+    primefactor_t factors2[5] = {{2,5}, {3,2}, {5,1}, {11,2}, {42,7}};
+    primefactor_t factors3[5] = {{2,5}, {3,2}, {5,1}, {11,2}, {11,7}};
+    char repr[100];
+    // First factors
+    tostring(repr, 100, factors1, 5);
+    printf("%s:   %d\n", repr, validate(factors1, 5));
+    // Second factors
+    tostring(repr, 100, factors2, 5);
+    printf("%s:   %d\n", repr, validate(factors2, 5));
+    // Third factors
+    tostring(repr, 100, factors3, 5);
+    printf("%s:   %d\n", repr, validate(factors3, 5));
+}
+
 void testprimes() {
     printf("\n*** Testing prime number functions.\n");
     test_tovalue();
     test_tostring();
     test_enumerate();
+    test_validate();
 }
 
 /* squares.c tests */
