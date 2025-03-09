@@ -155,6 +155,7 @@ void test_getss() {
         gmp_printf("%Zd = (%Zd)^2 + (%Zd)^2\n", sum, out[j].first, out[j].second);
         mpz_clear(sum);
     }
+    pair_array_clear(out, 100);
 }
 
 void testsquares() {
@@ -167,8 +168,47 @@ void testsquares() {
 
 /* search.c tests */
 
+void test_twicesquared() {
+    primefactor_t factors1[5] = {{2,5}, {3,2}, {5,1}, {11,2}, {41,7}};
+    primefactor_t factors2[5] = {{3,3}, {5,1}, {11,2}, {13, 2}, {41,7}};
+    primefactor_t out[6];
+    size_t outlen;
+    char buf[100];
+
+    outlen = twice_squared(out, factors1, 5);
+    tostring(buf, 100, out, outlen);
+    printf("Expected: 2^11 * 3^4 * 5^2 * 11^4 * 41^14\n");
+    printf("Actual:   %s\n", buf);
+    outlen = twice_squared(out, factors2, 5);
+    tostring(buf, 100, out, outlen);
+    printf("Expected: 3^6 * 5^2 * 11^4 * 13^4 * 41^14 * 2^1\n");
+    printf("Actual:   %s\n", buf);
+}
+
+void test_squarefilter() {
+    primefactor_t factors1[4] = {{2, 1}, {3, 2}, {5, 3}, {13, 1}};
+    pair_t out[100]; // intentionally oversized
+    size_t count;
+
+    count = countsumsquares(factors1, 4);
+    pair_array_init(out, count);
+    getsumsquares(out, factors1, 4);
+    count = square_filter(out, count); // clears tail of array
+    printf("Expected: 4 sums to 29250\n");
+    for (size_t j = 0; j < count; j++) {
+        mpz_t sum;
+        mpz_init_set_ui(sum, 0);
+        mpz_add(sum, out[j].first, out[j].second);
+        gmp_printf("%Zd = %Zd + %Zd\n", sum, out[j].first, out[j].second);
+        mpz_clear(sum);
+    }
+    pair_array_clear(out, count);
+}
+
 void testsearch() {
     printf("\n*** Testing search functions.\n");
+    test_twicesquared();
+    test_squarefilter();
 }
 
 /* Run all tests */
