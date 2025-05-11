@@ -1,3 +1,11 @@
+# C objects
+*.o
+*.a
+*.so
+
+# VSCode files
+.vscode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
